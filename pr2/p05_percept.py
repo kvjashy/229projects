@@ -14,7 +14,7 @@ def initial_state():
     contain the state of the perceptron.
 
     """
-    return [0,0]
+    return []
 
 def predict(state, kernel, x_i):
     """Peform a prediction on a given instance x_i given the current state
@@ -27,15 +27,12 @@ def predict(state, kernel, x_i):
         x_i: A vector containing the features for a single instance
     
     Returns:
-        Returns the prediction (i.e 0 or 1)
+        Returns the prediction (i.e 0 or 1)1
     """
-    # *** START CODE HERE ***
-    x = initial_state()
     prediction = 0
-    for j in range(len(x_i)):
-        prediction = sign(np.sum(state * kernel(x[j],x_i)))
+    for beta, x in state:
+        prediction = sign(np.sum(beta * kernel(x, x_i))) # for each beta, x pair it compuates the kernel(x,new_x)*beta, the sign of this sum is the prediction
     return prediction
-    # *** END CODE HERE ***
 
 
 def update_state(state, kernel, learning_rate, x_i, y_i):
@@ -48,11 +45,9 @@ def update_state(state, kernel, learning_rate, x_i, y_i):
         x_i: A vector containing the features for a single instance
         y_i: A 0 or 1 indicating the label for a single instance
     """
-    # *** START CODE HERE ***
     prediction = predict(state, kernel,x_i)
-    if prediction != y_i:
-        state += learning_rate * y_i
-    # *** END CODE HERE ***
+    update = learning_rate * (y_i - prediction)
+    state.append((update, x_i)) #add the new beta and the new x_i to the statepf the perceptron
 
 
 def sign(a):
@@ -98,18 +93,20 @@ def train_perceptron(kernel_name, kernel, learning_rate):
         learning_rate: The learning rate for training.
     """
     train_x, train_y = util.load_csv('/home/kev/Documents/229proj/pr2/data/ds5_train.csv')
-
     state = initial_state()
 
     for x_i, y_i in zip(train_x, train_y):
         update_state(state, kernel, learning_rate, x_i, y_i)
-
     test_x, test_y = util.load_csv('/home/kev/Documents/229proj/pr2/data/ds5_train.csv')
 
     plt.figure(figsize=(12, 8))
     util.plot_contour(lambda a: predict(state, kernel, a))
     util.plot_points(test_x, test_y)
+    plt.savefig('./output/p05_{}_output.png'.format(kernel_name))
+    plt.show()
+def main():
+    train_perceptron('dot', dot_kernel, 0.5)
+    train_perceptron('rbf', rbf_kernel, 0.5)
 
-
-train_perceptron('dot', dot_kernel, 0.5)
-train_perceptron('rbf', rbf_kernel, 0.5)
+if __name__ == "__main__":
+    main()
