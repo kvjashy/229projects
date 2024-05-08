@@ -68,8 +68,7 @@ def transform_text(messages, word_dictionary):
     Returns:
         A numpy array marking the words present in each message.
     """
-    # *** START CODE HERE ***
-    word_dict = create_dictionary(messages)
+    word_dict = word_dictionary
     columns = len(word_dict) 
     rows = len(messages) 
 
@@ -80,9 +79,7 @@ def transform_text(messages, word_dictionary):
             if word in word_dict.keys():
                 col_idx = word_dict[word]
                 word_mat[row_idx][col_idx] += 1
-    
     return word_mat
-    # *** END CODE HERE ***
 
 
 def fit_naive_bayes_model(matrix, labels):
@@ -100,10 +97,26 @@ def fit_naive_bayes_model(matrix, labels):
 
     Returns: The trained model
     """
+    n = len(labels)
+    rows = matrix.shape[0]
+    cols = matrix.shape[1]
+    phi_y = sum(labels)/n
+    phi_y1 = np.ones(cols)
+    phi_y0 = np.ones(cols)
+    total_y1 = cols #this is from the laplace assumption that every word has been seen atleast once, to avoid 0- errors
+    total_y0 = cols
+    for index, row in enumerate(matrix):
+            if labels[index] == 1:
+                total_y1 += sum(row) #summing entire row to add to total val for all y=1
+                phi_y1 += row #numpy vector operations allow, += to count words for phi_y1 and phi_y0 , reducing need for a double for loop
+            else:
+                total_y0 += sum(row)
+                phi_y0 += row
 
-    # *** START CODE HERE ***
-    # *** END CODE HERE ***
+    phi_y1 = phi_y1 / total_y1
+    phi_y0 = phi_y0 / total_y0
 
+    return {'phi_y': phi_y, 'phi_y1': phi_y1, 'phi_y0': phi_y0}
 
 def predict_from_naive_bayes_model(model, matrix):
     """Use a Naive Bayes model to compute predictions for a target matrix.
@@ -117,9 +130,27 @@ def predict_from_naive_bayes_model(model, matrix):
 
     Returns: A numpy array containg the predictions from the model
     """
-    # *** START CODE HERE ***
-    # *** END CODE HERE ***
+    phi_y = model['phi_y']
+    phi_y1 = model['phi_y1']
+    phi_y0 = model['phi_y0']
 
+    #computing log probs as suggested in q to avoid underflow problems 
+    prior_1 = np.log(phi_y)
+    prior_0 = np.log(1-phi_y)
+    log_phi_y1 = np.log(phi_y1)
+    log_phi_y0 = np.log(phi_y0)
+
+    rows = matrix.shape[0]
+
+    predictions = np.zeros(rows)  #predictions for each example
+    for index, row in enumerate(matrix):
+        p_y1 = np.dot(row, log_phi_y1) + prior_1 # calcualating the prob of y=1 by finding the dot product between the featues x and prob learned before then adding prior 
+        p_y0 = np.dot(row, log_phi_y0) + prior_0 #eq different format as using log 
+        if p_y1 > p_y0: #if prob of y=1 given x is greater than prob y=0 given x predict 1 and 0 viceversa
+            predictions[index] = 1
+        else:
+            predictions[index] = 0
+    return predictions
 
 def get_top_five_naive_bayes_words(model, dictionary):
     """Compute the top five words that are most indicative of the spam (i.e positive) class.
@@ -167,14 +198,14 @@ def main():
 
     train_matrix = transform_text(train_messages, dictionary)
 
-    # np.savetxt('./output/p06/p06_sample_train_matrix', train_matrix[:100,:])
+    np.savetxt('./output/p06/p06_sample_train_matrix', train_matrix[:100,:])
 
-    # val_matrix = transform_text(val_messages, dictionary)
-    # test_matrix = transform_text(test_messages, dictionary)
+    val_matrix = transform_text(val_messages, dictionary)
+    test_matrix = transform_text(test_messages, dictionary)
 
-    # naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
+    naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
 
-    # naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
+    naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
 
     # np.savetxt('./output/p06_naive_bayes_predictions', naive_bayes_predictions)
 
