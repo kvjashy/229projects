@@ -146,7 +146,9 @@ def predict_from_naive_bayes_model(model, matrix):
     for index, row in enumerate(matrix):
         p_y1 = np.dot(row, log_phi_y1) + prior_1 # calcualating the prob of y=1 by finding the dot product between the featues x and prob learned before then adding prior 
         p_y0 = np.dot(row, log_phi_y0) + prior_0 #eq different format as using log 
-        if p_y1 > p_y0: #if prob of y=1 given x is greater than prob y=0 given x predict 1 and 0 viceversa
+        #the denomentor p(x) does not need to be calculated as it will be the same for either class however this 
+        #does mean mean these are not probs but values proportional to the probs
+        if p_y1 > p_y0: #if the value proportional to prob of y=1 given x is greater than  y=0 given x predict 1 and 0 viceversa
             predictions[index] = 1
         else:
             predictions[index] = 0
@@ -164,10 +166,24 @@ def get_top_five_naive_bayes_words(model, dictionary):
 
     Returns: The top five most indicative words in sorted order with the most indicative first
     """
-    # *** START CODE HERE ***
-    # *** END CODE HERE ***
+    phi_y = model['phi_y']
+    phi_y1 = model['phi_y1']
+    phi_y0 = model['phi_y0']
 
+    token_measure = np.array(np.log(phi_y1/phi_y0))
+    five_largest = np.argsort(token_measure)[-5:]
+    five_largest = np.sort(five_largest)
+    output = []
 
+    for value in five_largest:
+        # Iterate through each value in five_largest
+        # Add the first key found with that value to output
+        for key in dictionary:
+            if dictionary[key] == value:
+                output.append(key)
+                break 
+    return output 
+    
 def compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, radius_to_consider):
     """Compute the optimal SVM radius using the provided training and evaluation datasets.
 
@@ -184,9 +200,16 @@ def compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, 
     Returns:
         The best radius which maximizes SVM accuracy.
     """
-    # *** START CODE HERE ***
-    # *** END CODE HERE ***
-
+    
+    max_accuracy = 0
+    best_radius = 0
+    for radius in radius_to_consider:
+        pred_labels = svm.train_and_predict_svm(train_matrix, train_labels, val_matrix, radius)
+        accuracy = np.mean(pred_labels == val_labels)
+        if accuracy > max_accuracy:
+            max_accuracy = accuracy
+            best_radius = radius
+    return best_radius
 
 def main():
     train_messages, train_labels = util.load_spam_dataset('data/ds6_train.tsv')
@@ -207,29 +230,29 @@ def main():
 
     naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
 
-    # np.savetxt('./output/p06_naive_bayes_predictions', naive_bayes_predictions)
+    np.savetxt('./output/p06/p06_naive_bayes_predictions', naive_bayes_predictions)
 
-    # naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
+    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
 
-    # print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
+    print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
 
-    # top_5_words = get_top_five_naive_bayes_words(naive_bayes_model, dictionary)
+    top_5_words = get_top_five_naive_bayes_words(naive_bayes_model, dictionary)
 
-    # print('The top 5 indicative words for Naive Bayes are: ', top_5_words)
+    print('The top 5 indicative words for Naive Bayes are: ', top_5_words)
 
-    # util.write_json('./output/p06_top_indicative_words', top_5_words)
+    util.write_json('./output/p06/p06_top_indicative_words', top_5_words)
 
-    # optimal_radius = compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, [0.01, 0.1, 1, 10])
+    optimal_radius = compute_best_svm_radius(train_matrix, train_labels, val_matrix, val_labels, [0.01, 0.1, 1, 10])
 
-    # util.write_json('./output/p06_optimal_radius', optimal_radius)
+    util.write_json('./output/p06/p06_optimal_radius', optimal_radius)
 
-    # print('The optimal SVM radius was {}'.format(optimal_radius))
+    print('The optimal SVM radius was {}'.format(optimal_radius))
 
-    # svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, test_matrix, optimal_radius)
+    svm_predictions = svm.train_and_predict_svm(train_matrix, train_labels, test_matrix, optimal_radius)
 
-    # svm_accuracy = np.mean(svm_predictions == test_labels)
+    svm_accuracy = np.mean(svm_predictions == test_labels)
 
-    # print('The SVM model had an accuracy of {} on the testing set'.format(svm_accuracy, optimal_radius))
+    print('The SVM model had an accuracy of {} on the testing set'.format(svm_accuracy, optimal_radius))
 
 
 if __name__ == "__main__":
